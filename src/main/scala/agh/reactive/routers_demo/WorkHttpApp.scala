@@ -69,7 +69,7 @@ class WorkHttpServer extends JsonSupport {
   implicit val system           = ActorSystem(Behaviors.empty, "ReactiveRouters")
   implicit val scheduler        = system.scheduler
   implicit val executionContext = system.executionContext
-  val workers                   = system.systemActorOf(Routers.pool(5)(HttpWorker()), "workersRouter")
+  val workers                   = system.systemActorOf(Routers.pool(5)(HttpWorker()), "workersRouter") // only on local setup, cant scale to another JVM
 
   implicit val timeout: Timeout = 5.seconds
 

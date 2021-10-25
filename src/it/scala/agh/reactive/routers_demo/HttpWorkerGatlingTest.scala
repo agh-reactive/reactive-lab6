@@ -8,6 +8,7 @@ class HttpWorkerGatlingTest extends Simulation {
 
   val httpProtocol = http  //values here are adjusted to cluster_demo.sh script
     .baseUrls("http://localhost:9001", "http://localhost:9002", "http://localhost:9003")
+    //.baseUrls("http://localhost:9001")
     .acceptHeader("text/plain,text/html,application/json,application/xml;")
     .userAgentHeader("Mozilla/5.0 (Windows NT 5.1; rv:31.0) Gecko/20100101 Firefox/31.0")
 
@@ -19,9 +20,9 @@ class HttpWorkerGatlingTest extends Simulation {
         .body(StringBody("""{ "work": "${work}" }"""))
         .asJson
     )
-    .pause(5)
+    .pause(1)
 
   setUp(
-    scn.inject(rampUsers(7).during(1.minutes))
+    scn.inject(rampUsers(100).during(30.seconds))
   ).protocols(httpProtocol)
 }
