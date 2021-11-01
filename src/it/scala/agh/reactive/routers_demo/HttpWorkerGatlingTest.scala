@@ -23,6 +23,6 @@ class HttpWorkerGatlingTest extends Simulation {
     .pause(1)
 
   setUp(
-    scn.inject(rampUsers(100).during(30.seconds))
+    scn.inject(constantConcurrentUsers(1000).during(30.seconds))
   ).protocols(httpProtocol)
 }

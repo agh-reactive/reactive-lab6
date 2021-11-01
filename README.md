@@ -1,6 +1,18 @@
 # reactive-lab6
 
-## Local Http server with local router
+To efficiently distribute workloads among actors, we use [routers](https://doc.akka.io/docs/akka/current/typed/routers.html) mechanism. 
+
+## Local Pool Routers
+
+An example of the local Pool Router (creating routers within on the same node) can be found in [LocalRoutersDemo](src/main/scala/agh/reactive/routers_demo/LocalRoutersDemo.scala). 
+This is the most basic demonstration of Akka actor routers.
+
+
+## HTTP server with local Pool Router
+
+To make our example more attractive, we can build a [simple HTTP server](https://doc.akka.io/docs/akka-http/current/routing-dsl/index.html#minimal-example) to receive work and distribute this work to the local Router Pool.
+Take a look at our implementation [WorkHttpApp](src/main/scala/agh/reactive/routers_demo/WorkHttpApp.scala) (it has also simple JSON parser configured).
+
 To run WorkHttpApp
 ```bash
 sbt "runMain agh.reactive.routers_demo.WorkHttpApp 9123"
@@ -11,37 +23,53 @@ Simple curl to test WorkHttpApp
 curl -X POST \
   http://localhost:9123/work \
   -H 'Content-Type: application/json' \
-  -H 'cache-control: no-cache' \
   -d '{
 	"work": "some work to do"
   }'
 ```
 
-## Http server with Pool router on cluster setup
+## Multiple HTTP servers with Group Router, workers on separate nodes, binded with the cluster setup
 
-See: `application.conf` file
+Using [Group Router](https://doc.akka.io/docs/akka/current/typed/routers.html#group-router) we can distribute our work among different nodes using Akka cluster setup.
+
+Our work distributor example - [WorkHttpClusterApp](src/main/scala/agh/reactive/routers_demo/WorkHttpClusterApp.scala).
+
+For cluster configuration see: [application.conf](src/main/resources/application.conf) file.
 
 First setup node cluster:
 ```bash
-# first create ClusterWorkRouters cluster
-sbt "runMain agh.reactive.routers_demo.ClusterNodeApp seed-node1" &
-sbt "runMain agh.reactive.routers_demo.ClusterNodeApp seed-node2" &
-sbt "runMain agh.reactive.routers_demo.ClusterNodeApp" & #just the node on random port
+# first create workers reigestered under HttpWorker ServiceKey
+# run each line in different terminal
+sbt "runMain agh.reactive.routers_demo.ClusterNodeApp seed-node1"
+sbt "runMain agh.reactive.routers_demo.ClusterNodeApp seed-node2"
+sbt "runMain agh.reactive.routers_demo.ClusterNodeApp" # optional - just the additional node on random port
 ```
 
-Then run separate server HTTP instances with configured Pool router
+Then run separate server HTTP instances with configured Group Router based on HttpWorker ServiceKey
 ```bash
-# starting http servers which will also create routers with workers deployed on previously configured cluster
-sbt "runMain agh.reactive.routers_demo.WorkHttpClusterApp 9001" &
-sbt "runMain agh.reactive.routers_demo.WorkHttpClusterApp 9002" &
-sbt "runMain agh.reactive.routers_demo.WorkHttpClusterApp 9003" &
+# start http servers with Group router connected to HttpWorker ServiceKey recepcionist 
+sbt "runMain agh.reactive.routers_demo.WorkHttpClusterApp 9001" 
+sbt "runMain agh.reactive.routers_demo.WorkHttpClusterApp 9002" 
+sbt "runMain agh.reactive.routers_demo.WorkHttpClusterApp 9003" 
 ```
+
+Test the app manually:
+
+```bash
+curl -X POST \
+  http://localhost:9001/work \
+  -H 'Content-Type: application/json' \
+  -d '{
+	"work": "some work to do (cluster based Group Router)"
+  }'
+```
+Notice which node has processed your work.
 
 ## Gatling performance test
 
 (see: https://gatling.io/docs/current/quickstart/)
 
-To start basic gatling performance test, run:
+To start the basic Gatling performance test, run:
 ```bash
 sbt gatling-it:test
 ```
@@ -58,4 +86,25 @@ Use to be sure that you've killed every instance of sbt
 ps ax | grep sbt | awk '{print $1}' | xargs kill -9
 ```
 
+## Bonus - Akka Sharding, advanced actor distribution
 
+It is worth to take a look at yet another akka mechanism [Cluster Sharding](https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html). Cluster Sharding is usually used to model distributed domain related actors (play nicely with DDD appraoch where each actor is a proper [aggregate](https://martinfowler.com/bliki/DDD_Aggregate.html)).
+
+
+# Homework
+
+Use solution from Lab5 to implement below exercises.
+1. (15 points) Scaling and testing load on Product Catalog (local solution)
+    * Scale Product Catalog with Pool Router mechanism (multiple Product Catalogs connected to one HTTP server)
+    * Conduct performance testing with Gatling, explain what exactly scenario you've implemented and why you used such params.
+    * Try to asses maximum supported number of users. 
+    * Take a look at [Little's Law](https://techcommunity.microsoft.com/t5/testingspot-blog/little-law-of-queuing-theory-and-how-it-impacts-load-testers/ba-p/367620)
+2. (15 points) Scaling and testing load on Product Catalog (akka cluster based solution)
+    * Configure Akka Cluster with 3 nodes.
+    * Each node should expose REST endpoint on separate port.
+    * Configure HTTP load balancer ([nginx](http://nginx.org/en/docs/http/load_balancing.html or [HAProxy](http://www.haproxy.org/)) or just tweak gatling tests to use multiple HTTP servers.
+    * Rerun tests from point 1.
+    * Try to asses maximum supported number of users. 
+3. (10 points) [Distributed Publish Subscribe in Cluster](https://doc.akka.io/docs/akka/current/typed/distributed-pub-sub.html)
+    * Create actor counting number of requests handled by Product Catalog instances. Exposes stats via REST endpoint.
+    * Create counting actor on separate dedicated node. 

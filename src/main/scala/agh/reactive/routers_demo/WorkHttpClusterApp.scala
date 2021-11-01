@@ -15,7 +15,7 @@ import scala.io.StdIn
 import scala.util.Try
 
 /**
- * Basically a [[HttpWorker]] that registers itself with the receptionist
+ * A [[RegisteredHttpWorker]] that registers itself with the receptionist
  * @see https://doc.akka.io/docs/akka/current/typed/actor-discovery.html#receptionist
  */
 object RegisteredHttpWorker {
@@ -25,20 +25,19 @@ object RegisteredHttpWorker {
     context.system.receptionist ! Receptionist.Register(HttpWorkerKey, context.self)
     context.log.info(s"New worker spawned, on actor system: ${context.system.name}")
 
-    Behaviors.receive(
-      (context, msg) =>
-        msg match {
-          case HttpWorker.Work(work, replyTo) =>
-            context.log.info(s"I got to work on $work")
-            replyTo ! HttpWorker.WorkerResponse("Done")
-            Behaviors.same
+    Behaviors.receive((context, msg) =>
+      msg match {
+        case HttpWorker.Work(work, replyTo) =>
+          context.log.info(s"I got to work on $work")
+          replyTo ! HttpWorker.WorkerResponse("Done")
+          Behaviors.same
       }
     )
   }
 }
 
 /**
- * Spawns an actor system that will connect with the cluster and spawn `instancesPerNode` workers
+ * Spawns an actor system that will join the cluster and spawn `instancesPerNode` workers
  */
 class HttpWorkersNode {
   private val instancesPerNode = 3
@@ -50,22 +49,22 @@ class HttpWorkersNode {
     config.getConfig("cluster-default")
   )
 
+  // spawn workers
   for (i <- 0 to instancesPerNode) system.systemActorOf(RegisteredHttpWorker(), s"worker$i")
 
-  def terminate(): Unit = {
+  def terminate(): Unit =
     system.terminate()
-  }
 }
 
 /**
  * Spawns a seed node with workers registered under recepcionist
  */
 object ClusterNodeApp extends App {
-  private val config = ConfigFactory.load()
+  private val config               = ConfigFactory.load()
   private val httpWorkersNodeCount = 10
 
   val system = ActorSystem[Nothing](
-    Behaviors.setup[Nothing]{ ctx =>
+    Behaviors.setup[Nothing] { ctx =>
       // spawn workers
       val workersNodes = for (_ <- 0 to httpWorkersNodeCount) yield new HttpWorkersNode()
       Behaviors.same
@@ -80,21 +79,20 @@ object ClusterNodeApp extends App {
 }
 
 /**
-  * Start HTTP server with Group Router 
-  */
+ * Start HTTP server with Group Router
+ */
 object WorkHttpClusterApp extends App {
   val workHttpServerInCluster = new WorkHttpServerInCluster()
   workHttpServerInCluster.run(args(0).toInt)
 }
 
 /**
- * The server that distributes all of the requests to the workers registered in the cluster via the group router under recepcionist ServiceKey.
+ * The server that distributes all of the requests to the workers registered in the cluster via the Group Router under recepcionist ServiceKey.
  * Seed nodes have to be spawned separately, see ClusterNodeApp
  * @see https://doc.akka.io/docs/akka/current/typed/routers.html#group-router
  */
 class WorkHttpServerInCluster() extends JsonSupport {
-  private val config               = ConfigFactory.load()
-  private val httpWorkersNodeCount = 10
+  private val config = ConfigFactory.load()
 
   implicit val system = ActorSystem[Nothing](
     Behaviors.empty,
@@ -105,7 +103,7 @@ class WorkHttpServerInCluster() extends JsonSupport {
   implicit val scheduler        = system.scheduler
   implicit val executionContext = system.executionContext
 
-
+  // distributed Group Router, workers possibly on different nodes
   val workers = system.systemActorOf(Routers.group(RegisteredHttpWorker.HttpWorkerKey), "clusterWorkerRouter")
 
   implicit val timeout: Timeout = 5.seconds
@@ -114,6 +112,7 @@ class WorkHttpServerInCluster() extends JsonSupport {
     post {
       entity(as[WorkDTO]) { workDto =>
         complete {
+          println(s"Work to be distributed [${workDto.work}]")
           workers.ask(replyTo => HttpWorker.Work(workDto.work, replyTo))
         }
       }
@@ -126,8 +125,8 @@ class WorkHttpServerInCluster() extends JsonSupport {
     StdIn.readLine() // let it run until user presses return
     bindingFuture
       .flatMap(_.unbind()) // trigger unbinding from the port
-      .onComplete(_ => {
+      .onComplete { _ =>
         system.terminate()
-      }) // and shutdown when done
+      } // and shutdown when done
   }
 }

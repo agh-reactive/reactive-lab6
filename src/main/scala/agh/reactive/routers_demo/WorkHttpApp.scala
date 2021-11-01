@@ -19,7 +19,7 @@ import scala.io.StdIn
 import scala.util.Try
 
 /**
- * Basically a [[Worker]] that responds to the sender and does not stop
+ * A [[Worker]] that responds to the sender and does not stop
  */
 object HttpWorker {
   sealed trait Command
@@ -28,13 +28,12 @@ object HttpWorker {
   case class WorkerResponse(work: String)
 
   def apply(): Behavior[Command] =
-    Behaviors.receive(
-      (context, msg) =>
-        msg match {
-          case Work(work, replyTo) =>
-            context.log.info(s"I got to work on $work")
-            replyTo ! WorkerResponse("Done")
-            Behaviors.same
+    Behaviors.receive((context, msg) =>
+      msg match {
+        case Work(work, replyTo) =>
+          context.log.info(s"I got to work on $work")
+          replyTo ! WorkerResponse(s"[$work] Done")
+          Behaviors.same //do not stop the worker
       }
     )
 }
@@ -56,11 +55,6 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
 }
 
-object WorkHttpApp extends App {
-  val workHttpServer = new WorkHttpServer()
-  workHttpServer.run(Try(args(0).toInt).getOrElse(9000))
-}
-
 /**
  * The server that distributes all of the requests to the local workers spawned via router pool.
  */
@@ -69,7 +63,10 @@ class WorkHttpServer extends JsonSupport {
   implicit val system           = ActorSystem(Behaviors.empty, "ReactiveRouters")
   implicit val scheduler        = system.scheduler
   implicit val executionContext = system.executionContext
-  val workers                   = system.systemActorOf(Routers.pool(5)(HttpWorker()), "workersRouter") // only on local setup, cant scale to another JVM
+  val workers = system.systemActorOf(
+    Routers.pool(5)(HttpWorker()),
+    "workersRouter"
+  ) // only on local setup, cant scale to another JVM
 
   implicit val timeout: Timeout = 5.seconds
 
@@ -88,7 +85,13 @@ class WorkHttpServer extends JsonSupport {
     println(s"Server now online. Please navigate to http://localhost:8080/hello\nPress RETURN to stop...")
     StdIn.readLine() // let it run until user presses return
     bindingFuture
-      .flatMap(_.unbind()) // trigger unbinding from the port
+      .flatMap(_.unbind())                 // trigger unbinding from the port
       .onComplete(_ => system.terminate()) // and shutdown when done
   }
 }
+
+object WorkHttpApp extends App {
+  val workHttpServer = new WorkHttpServer()
+  workHttpServer.run(Try(args(0).toInt).getOrElse(9000))
+}
+
