@@ -19,7 +19,7 @@ import scala.io.StdIn
 import scala.util.Try
 
 /**
- * A [[Worker]] that responds to the sender and does not stop
+ * A [[HttpWorker]] that responds to the sender and does not stop
  */
 object HttpWorker {
   sealed trait Command
@@ -33,7 +33,7 @@ object HttpWorker {
         case Work(work, replyTo) =>
           context.log.info(s"I got to work on $work")
           replyTo ! WorkerResponse(s"[$work] Done")
-          Behaviors.same //do not stop the worker
+          Behaviors.same // do not stop the worker
       }
     )
 }
@@ -41,10 +41,10 @@ object HttpWorker {
 trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   case class WorkDTO(work: String)
 
-  implicit val workerDtoWork  = jsonFormat1(WorkDTO)
+  implicit val workerDtoWork = jsonFormat1(WorkDTO)
   implicit val workerResponse = jsonFormat1(HttpWorker.WorkerResponse)
 
-  //custom formatter just for example
+  // custom formatter just for example
   implicit val uriFormat = new JsonFormat[java.net.URI] {
     override def write(obj: java.net.URI): spray.json.JsValue = JsString(obj.toString)
     override def read(json: JsValue): URI = json match {
@@ -60,8 +60,8 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
  */
 class WorkHttpServer extends JsonSupport {
 
-  implicit val system           = ActorSystem(Behaviors.empty, "ReactiveRouters")
-  implicit val scheduler        = system.scheduler
+  implicit val system = ActorSystem(Behaviors.empty, "ReactiveRouters")
+  implicit val scheduler = system.scheduler
   implicit val executionContext = system.executionContext
   val workers = system.systemActorOf(
     Routers.pool(5)(HttpWorker()),
@@ -85,7 +85,7 @@ class WorkHttpServer extends JsonSupport {
     println(s"Server now online. Please navigate to http://localhost:8080/hello\nPress RETURN to stop...")
     StdIn.readLine() // let it run until user presses return
     bindingFuture
-      .flatMap(_.unbind())                 // trigger unbinding from the port
+      .flatMap(_.unbind()) // trigger unbinding from the port
       .onComplete(_ => system.terminate()) // and shutdown when done
   }
 }
@@ -94,4 +94,3 @@ object WorkHttpApp extends App {
   val workHttpServer = new WorkHttpServer()
   workHttpServer.run(Try(args(0).toInt).getOrElse(9000))
 }
-

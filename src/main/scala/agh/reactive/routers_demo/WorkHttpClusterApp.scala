@@ -16,7 +16,8 @@ import scala.util.Try
 
 /**
  * A [[RegisteredHttpWorker]] that registers itself with the receptionist
- * @see https://doc.akka.io/docs/akka/current/typed/actor-discovery.html#receptionist
+ * @see
+ *   https://doc.akka.io/docs/akka/current/typed/actor-discovery.html#receptionist
  */
 object RegisteredHttpWorker {
   val HttpWorkerKey: ServiceKey[HttpWorker.Command] = ServiceKey("HttpWorker")
@@ -41,7 +42,7 @@ object RegisteredHttpWorker {
  */
 class HttpWorkersNode {
   private val instancesPerNode = 3
-  private val config           = ConfigFactory.load()
+  private val config = ConfigFactory.load()
 
   val system = ActorSystem[Nothing](
     Behaviors.empty,
@@ -60,7 +61,7 @@ class HttpWorkersNode {
  * Spawns a seed node with workers registered under recepcionist
  */
 object ClusterNodeApp extends App {
-  private val config               = ConfigFactory.load()
+  private val config = ConfigFactory.load()
   private val httpWorkersNodeCount = 10
 
   val system = ActorSystem[Nothing](
@@ -87,9 +88,10 @@ object WorkHttpClusterApp extends App {
 }
 
 /**
- * The server that distributes all of the requests to the workers registered in the cluster via the Group Router under recepcionist ServiceKey.
- * Seed nodes have to be spawned separately, see ClusterNodeApp
- * @see https://doc.akka.io/docs/akka/current/typed/routers.html#group-router
+ * The server that distributes all of the requests to the workers registered in the cluster via the Group Router under
+ * recepcionist ServiceKey. Seed nodes have to be spawned separately, see ClusterNodeApp
+ * @see
+ *   https://doc.akka.io/docs/akka/current/typed/routers.html#group-router
  */
 class WorkHttpServerInCluster() extends JsonSupport {
   private val config = ConfigFactory.load()
@@ -100,7 +102,7 @@ class WorkHttpServerInCluster() extends JsonSupport {
     config.getConfig("cluster-default")
   )
 
-  implicit val scheduler        = system.scheduler
+  implicit val scheduler = system.scheduler
   implicit val executionContext = system.executionContext
 
   // distributed Group Router, workers possibly on different nodes

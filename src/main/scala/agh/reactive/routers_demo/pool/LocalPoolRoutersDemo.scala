@@ -1,4 +1,4 @@
-package agh.reactive.routers_demo
+package agh.reactive.routers_demo.pool
 
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.{Behaviors, Routers}
@@ -13,7 +13,7 @@ object Worker {
     Behaviors.receive[Work]((context, msg) =>
       msg match {
         case Work(work) =>
-          context.log.info(s"I got to work on $work")
+          context.log.info(s"Actor: ${context.self}; I got to work on $work")
           Behaviors.stopped
       }
     )
@@ -21,13 +21,14 @@ object Worker {
 
 /**
  * Master that spawns `nbOfRoutees` local workers via pool router and distributes the work between them
- * @see https://doc.akka.io/docs/akka/current/typed/routers.html#pool-router
+ * @see
+ *   https://doc.akka.io/docs/akka/current/typed/routers.html#pool-router
  */
 object Master {
   case class WorkToDistribute(work: String)
 
   def apply(nbOfRoutees: Int): Behavior[WorkToDistribute] = Behaviors.setup { context =>
-    val pool   = Routers.pool(poolSize = nbOfRoutees)(Worker())
+    val pool = Routers.pool(poolSize = nbOfRoutees)(Worker())
     val router = context.spawn(pool, "worker-pool")
     context.watch(router)
 
@@ -69,14 +70,26 @@ object LocalRoutersDemo extends App {
  * Simple app that demonstrates the behaviour of pool router's broadcast mechanism
  */
 object SimpleLocalBroadcastRouterDemo extends App {
-  val system = ActorSystem(Behaviors.empty, "ReactiveRouters")
 
-  val pool = Routers
-    .pool(poolSize = 5)(Worker())
-    .withBroadcastPredicate(_ => true) // broadcasting each message
+  val nbOfRoutees = 5
 
-  val workers = system.systemActorOf(pool, "broadcast-workers")
+  ActorSystem(
+    Behaviors.setup[Any] { context =>
+      val pool = Routers
+        .pool(poolSize = 5)(Worker())
+        .withBroadcastPredicate(_ => true) // broadcasting each message
 
-  workers ! Worker.Work("some work broadcasted")
-//  workers ! Worker.Work("some work 2") // won't work since all of the actors inside the pool have received previous message and have stopped
+      val workers = context.spawn(pool, "broadcast-workers")
+      context.watch(workers)
+
+      workers ! Worker.Work("some work broadcasted")
+
+      Behaviors.receiveSignal { case (context, Terminated(router)) =>
+        context.log.info("Router is terminated.")
+        context.system.terminate()
+        Behaviors.stopped
+      }
+    },
+    "ReactiveRouters"
+  )
 }

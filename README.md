@@ -4,8 +4,11 @@ To efficiently distribute workloads among actors, we use [routers](https://doc.a
 
 ## Local Pool Routers
 
-An example of the local Pool Router (creating routers within on the same node) can be found in [LocalRoutersDemo](src/main/scala/agh/reactive/routers_demo/LocalRoutersDemo.scala). 
-This is the most basic demonstration of Akka actor routers.
+An example of the local Pool Router (creating routers within on the same node) can be found in [LocalPoolRoutersDemo](src/main/scala/agh/reactive/routers_demo/pool/LocalPoolRoutersDemo.scala).
+
+## Local Group Routers
+
+An example of the local Group Router (registering workers via recepcionist pattern) can be found in [LocalGroupRoutersDemo](src/main/scala/agh/reactive/routers_demo/group/LocalGroupRoutersDemo.scala).
 
 
 ## HTTP server with local Pool Router
@@ -28,7 +31,7 @@ curl -X POST \
   }'
 ```
 
-## Multiple HTTP servers with Group Router, workers on separate nodes, binded with the cluster setup
+## Multiple HTTP servers with Group Router, workers on separate nodes, bound with the cluster setup
 
 Using [Group Router](https://doc.akka.io/docs/akka/current/typed/routers.html#group-router) we can distribute our work among different nodes using Akka cluster setup.
 
@@ -60,7 +63,7 @@ curl -X POST \
   http://localhost:9001/work \
   -H 'Content-Type: application/json' \
   -d '{
-	"work": "some work to do (cluster based Group Router)"
+	"work": "some work to do (cluster-based Group Router)"
   }'
 ```
 Notice which node has processed your work.
@@ -79,7 +82,7 @@ To open last report:
 sbt gatling-it:lastReport
 ```
 
-# Hints
+## Hints
 
 Use to be sure that you've killed every instance of sbt
 ```bash
@@ -88,23 +91,23 @@ ps ax | grep sbt | awk '{print $1}' | xargs kill -9
 
 ## Bonus - Akka Sharding, advanced actor distribution
 
-It is worth to take a look at yet another akka mechanism [Cluster Sharding](https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html). Cluster Sharding is usually used to model distributed domain related actors (play nicely with DDD appraoch where each actor is a proper [aggregate](https://martinfowler.com/bliki/DDD_Aggregate.html)).
+It is worth taking a look at yet another akka mechanism [Cluster Sharding](https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html). Cluster Sharding is usually used to model distributed domain-related actors (play nicely with DDD approach where each actor is a proper [aggregate](https://martinfowler.com/bliki/DDD_Aggregate.html)).
 
 
 # Homework
 
-Use solution from Lab5 to implement below exercises.
+Use the ProductCatalog related solution from Lab5 to implement the below exercises.
 1. (15 points) Scaling and testing load on Product Catalog (local solution)
     * Scale Product Catalog with Pool Router mechanism (multiple Product Catalogs connected to one HTTP server)
-    * Conduct performance testing with Gatling, explain what exactly scenario you've implemented and why you used such params.
-    * Try to asses maximum supported number of users. 
+    * Conduct performance testing with Gatling, explain which scenario you've implemented and why you used such params. Discuss results.
+    * Try to estimate the maximum supported number of users. 
     * Take a look at [Little's Law](https://techcommunity.microsoft.com/t5/testingspot-blog/little-law-of-queuing-theory-and-how-it-impacts-load-testers/ba-p/367620)
-2. (15 points) Scaling and testing load on Product Catalog (akka cluster based solution)
+2. (15 points) Scaling and testing load on Product Catalog (akka cluster-based solution)
     * Configure Akka Cluster with 3 nodes.
-    * Each node should expose REST endpoint on separate port.
-    * Configure HTTP load balancer ([nginx](http://nginx.org/en/docs/http/load_balancing.html or [HAProxy](http://www.haproxy.org/)) or just tweak gatling tests to use multiple HTTP servers.
+    * Each node should expose REST endpoint on a separate port.
+    * Configure HTTP load balancer ([nginx](http://nginx.org/en/docs/http/load_balancing.html or [HAProxy](http://www.haproxy.org/)) or tweak gatling tests to use multiple HTTP servers.
     * Rerun tests from point 1.
-    * Try to asses maximum supported number of users. 
+    * Try to estimate the maximum supported number of users. 
 3. (10 points) [Distributed Publish Subscribe in Cluster](https://doc.akka.io/docs/akka/current/typed/distributed-pub-sub.html)
-    * Create actor counting number of requests handled by Product Catalog instances. Exposes stats via REST endpoint.
-    * Create counting actor on separate dedicated node. 
+    * Create actor counting number of requests handled by Product Catalog instances. Expose stats via REST endpoint.
+    * Create counting actor on a separate dedicated node. 
