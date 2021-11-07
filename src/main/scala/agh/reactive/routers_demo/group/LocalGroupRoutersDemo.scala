@@ -28,9 +28,10 @@ object GroupWorker {
 }
 
 /**
- * Master that spawns `nbOfRoutees` local workers via pool router and distributes the work between them
+ * Master that spawns `nbOfRoutees` local workers registered under WorkKey
+ * creates group router and distributes the work between workers
  * @see
- *   https://doc.akka.io/docs/akka/current/typed/routers.html#pool-router
+ *   https://doc.akka.io/docs/akka/current/typed/routers.html#group-router
  */
 object GroupMaster {
   case class WorkToDistribute(work: String)
