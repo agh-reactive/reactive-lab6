@@ -64,7 +64,7 @@ class WorkHttpServer extends JsonSupport {
   implicit val scheduler = system.scheduler
   implicit val executionContext = system.executionContext
   val workers = system.systemActorOf(
-    Routers.pool(5)(HttpWorker()),
+    Routers.pool(3)(HttpWorker()),
     "workersRouter"
   ) // only on local setup, can't scale to another JVM
 

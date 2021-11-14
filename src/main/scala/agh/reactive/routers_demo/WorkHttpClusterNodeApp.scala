@@ -38,36 +38,16 @@ object RegisteredHttpWorker {
 }
 
 /**
- * Spawns an actor system that will join the cluster and spawn `instancesPerNode` workers
- */
-class HttpWorkersNode {
-  private val instancesPerNode = 3
-  private val config = ConfigFactory.load()
-
-  val system = ActorSystem[Nothing](
-    Behaviors.empty,
-    "ClusterWorkRouters",
-    config.getConfig("cluster-default")
-  )
-
-  // spawn workers
-  for (i <- 0 to instancesPerNode) system.systemActorOf(RegisteredHttpWorker(), s"worker$i")
-
-  def terminate(): Unit =
-    system.terminate()
-}
-
-/**
- * Spawns a seed node with workers registered under recepcionist
+ * Spawns a node with workers registered under recepcionist
  */
 object WorkerClusterNodeApp extends App {
   private val config = ConfigFactory.load()
-  private val httpWorkersNodeCount = 10
+  private val httpWorkersNodeCount = 2
 
   val system = ActorSystem[Nothing](
     Behaviors.setup[Nothing] { ctx =>
       // spawn workers
-      val workersNodes = for (_ <- 0 to httpWorkersNodeCount) yield new HttpWorkersNode()
+      val workersNodes = for (i <- 1 to httpWorkersNodeCount) yield ctx.spawn(RegisteredHttpWorker(), s"worker$i")
       Behaviors.same
     },
     "ClusterWorkRouters",
