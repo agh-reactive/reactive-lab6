@@ -16,6 +16,8 @@ An example of the local Group Router (registering workers via recepcionist patte
 To make our example more attractive, we can build a [simple HTTP server](https://doc.akka.io/docs/akka-http/current/routing-dsl/index.html#minimal-example) to receive work and distribute this work to the local Router Pool.
 Take a look at our implementation [WorkHttpApp](src/main/scala/agh/reactive/routers_demo/WorkHttpApp.scala) (it has also simple JSON parser configured).
 
+![Worker HTTP Server Pool Router](worker_http_local.drawio.svg)
+
 To run WorkHttpApp
 ```bash
 sbt "runMain agh.reactive.routers_demo.WorkHttpApp 9123"
