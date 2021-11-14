@@ -66,7 +66,7 @@ class WorkHttpServer extends JsonSupport {
   val workers = system.systemActorOf(
     Routers.pool(5)(HttpWorker()),
     "workersRouter"
-  ) // only on local setup, cant scale to another JVM
+  ) // only on local setup, can't scale to another JVM
 
   implicit val timeout: Timeout = 5.seconds
 
@@ -82,7 +82,7 @@ class WorkHttpServer extends JsonSupport {
 
   def run(port: Int): Unit = {
     val bindingFuture = Http().newServerAt("localhost", port).bind(routes)
-    println(s"Server now online. Please navigate to http://localhost:8080/hello\nPress RETURN to stop...")
+    println(s"Server now online - http://localhost:$port\nPress RETURN to stop...")
     StdIn.readLine() // let it run until user presses return
     bindingFuture
       .flatMap(_.unbind()) // trigger unbinding from the port

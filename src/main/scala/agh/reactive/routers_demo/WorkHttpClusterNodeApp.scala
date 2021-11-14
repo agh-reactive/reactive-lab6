@@ -60,7 +60,7 @@ class HttpWorkersNode {
 /**
  * Spawns a seed node with workers registered under recepcionist
  */
-object ClusterNodeApp extends App {
+object WorkerClusterNodeApp extends App {
   private val config = ConfigFactory.load()
   private val httpWorkersNodeCount = 10
 
@@ -82,7 +82,7 @@ object ClusterNodeApp extends App {
 /**
  * Start HTTP server with Group Router
  */
-object WorkHttpClusterApp extends App {
+object WorkHttpClusterNodeApp extends App {
   val workHttpServerInCluster = new WorkHttpServerInCluster()
   workHttpServerInCluster.run(args(0).toInt)
 }

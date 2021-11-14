@@ -76,7 +76,7 @@ object SimpleLocalBroadcastRouterDemo extends App {
   ActorSystem(
     Behaviors.setup[Any] { context =>
       val pool = Routers
-        .pool(poolSize = 5)(Worker())
+        .pool(poolSize = nbOfRoutees)(Worker())
         .withBroadcastPredicate(_ => true) // broadcasting each message
 
       val workers = context.spawn(pool, "broadcast-workers")

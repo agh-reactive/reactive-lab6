@@ -1,4 +1,4 @@
-# reactive-lab6
+# Lab6 Local and in cluster parallel workload distribution
 
 To efficiently distribute workloads among actors, we use [routers](https://doc.akka.io/docs/akka/current/typed/routers.html) mechanism. 
 
@@ -35,25 +35,27 @@ curl -X POST \
 
 Using [Group Router](https://doc.akka.io/docs/akka/current/typed/routers.html#group-router) we can distribute our work among different nodes using Akka cluster setup.
 
-Our work distributor example - [WorkHttpClusterApp](src/main/scala/agh/reactive/routers_demo/WorkHttpClusterApp.scala).
+Our work distributor example - [WorkHttpClusterNodeApp](src/main/scala/agh/reactive/routers_demo/WorkHttpClusterNodeApp.scala).
 
 For cluster configuration see: [application.conf](src/main/resources/application.conf) file.
+
+![Group Router in cluster with HTTP servers](work_http_cluster.drawio.svg)
 
 First setup node cluster:
 ```bash
 # first create workers reigestered under HttpWorker ServiceKey
 # run each line in different terminal
-sbt "runMain agh.reactive.routers_demo.ClusterNodeApp seed-node1"
-sbt "runMain agh.reactive.routers_demo.ClusterNodeApp seed-node2"
-sbt "runMain agh.reactive.routers_demo.ClusterNodeApp" # optional - just the additional node on random port
+sbt "runMain agh.reactive.routers_demo.WorkerClusterNodeApp seed-node1"
+sbt "runMain agh.reactive.routers_demo.WorkerClusterNodeApp seed-node2"
+sbt "runMain agh.reactive.routers_demo.WorkerClusterNodeApp" # optional - just an  additional node on random port
 ```
 
 Then run separate server HTTP instances with configured Group Router based on HttpWorker ServiceKey
 ```bash
 # start http servers with Group router connected to HttpWorker ServiceKey recepcionist 
-sbt "runMain agh.reactive.routers_demo.WorkHttpClusterApp 9001" 
-sbt "runMain agh.reactive.routers_demo.WorkHttpClusterApp 9002" 
-sbt "runMain agh.reactive.routers_demo.WorkHttpClusterApp 9003" 
+sbt "runMain agh.reactive.routers_demo.WorkHttpClusterNodeApp 9001" 
+sbt "runMain agh.reactive.routers_demo.WorkHttpClusterNodeApp 9002" 
+sbt "runMain agh.reactive.routers_demo.WorkHttpClusterNodeApp 9003" 
 ```
 
 Test the app manually:
@@ -102,12 +104,15 @@ Use the ProductCatalog related solution from Lab5 to implement the below exercis
     * Conduct performance testing with Gatling, explain which scenario you've implemented and why you used such params. Discuss results.
     * Try to estimate the maximum supported number of users. 
     * Take a look at [Little's Law](https://techcommunity.microsoft.com/t5/testingspot-blog/little-law-of-queuing-theory-and-how-it-impacts-load-testers/ba-p/367620)
+    ![Product Catalog HTTP Local](product_catalog_http_local.drawio.svg)
 2. (15 points) Scaling and testing load on Product Catalog (akka cluster-based solution)
-    * Configure Akka Cluster with 3 nodes.
+    * Configure Akka Cluster with 6 nodes (3 HTTP Servers, 3 Product Catalog worker nodes).
     * Each node should expose REST endpoint on a separate port.
     * Configure HTTP load balancer ([nginx](http://nginx.org/en/docs/http/load_balancing.html or [HAProxy](http://www.haproxy.org/)) or tweak gatling tests to use multiple HTTP servers.
     * Rerun tests from point 1.
     * Try to estimate the maximum supported number of users. 
+    * How this architecture affects latency and memory usage?
+    ![Product Catalog HTTP Cluster](product_catalog_http_cluster.drawio.svg)
 3. (10 points) [Distributed Publish Subscribe in Cluster](https://doc.akka.io/docs/akka/current/typed/distributed-pub-sub.html)
     * Create actor counting number of requests handled by Product Catalog instances. Expose stats via REST endpoint.
     * Create counting actor on a separate dedicated node. 
