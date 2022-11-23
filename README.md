@@ -98,7 +98,7 @@ ps ax | grep sbt | awk '{print $1}' | xargs kill -9
 It is worth taking a look at yet another akka mechanism [Cluster Sharding](https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html). Cluster Sharding is usually used to model distributed domain-related actors (play nicely with DDD approach where each actor is a proper [aggregate](https://martinfowler.com/bliki/DDD_Aggregate.html)).
 
 
-# Homework
+# Assignments
 
 Use the ProductCatalog related solution from Lab5 to implement the below exercises.
 1. (15 points) Scaling and testing load on Product Catalog (local solution)
